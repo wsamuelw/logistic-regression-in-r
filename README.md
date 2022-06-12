@@ -1,6 +1,4 @@
-# logistic regression in r
-
-a demo using a churn dataset
+# logistic regression in r demos
 
 referrences
 
