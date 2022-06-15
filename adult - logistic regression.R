@@ -1,6 +1,3 @@
-# https://www.guru99.com/r-generalized-linear-model.html
-# https://www.displayr.com/how-to-interpret-logistic-regression-coefficients/
-
 # load packages ####
 library(tidyverse)
 library(tidymodels)
@@ -213,6 +210,8 @@ summary(model.1)
 # 
 # Number of Fisher Scoring iterations: 11
 
+# try relevel
+# data_cleaned$gender <- relevel(data_cleaned$gender, "Male")
 
 # the below explain why the summary() does not show all values for all features
 # level 1 = 0 Estimate e.g. for gender = female = 0. race = Amer-Indian-Eskimo = 0.
@@ -271,12 +270,13 @@ glimpse(train_data)
 # 1 = binary e.g. gender
 # 2 = multiple e.g. race
 
+levels(train_data$gender)
+# [1] "Female" "Male"  
+
 #                                       Estimate Std. Error z value Pr(>|z|)    
 # genderMale                            0.126083   0.041870   3.011  0.00260 ** 
 # with the above, all else being equal, males were more likely to have high income than females 
-
-levels(train_data$gender)
-# [1] "Female" "Male"  
+# exp(0.126083) = 1.134376 times that of being a female holding all else constant
 
 #                                       Estimate Std. Error z value Pr(>|z|)    
 # workclassFederal-gov                  1.396911   0.116787  11.961  < 2e-16 ***
@@ -288,12 +288,14 @@ levels(train_data$gender)
 # workclassState-gov                    0.572991   0.114293   5.013 5.35e-07 ***
 # workclassWithout-pay                 -0.421248   0.836348  -0.504  0.61449    
 
+levels(train_data$workclass)
+# [1] "?"                "Federal-gov"      "Local-gov"        "Never-worked"     "Private"          "Self-emp-inc"     "Self-emp-not-inc" "State-gov"        "Without-pay"     
+
 # the workclass tells "Federal-gov" and "Self-emp-inc" are more likely to have a high income
 # "Never-worked" and "Without-pay" are both negative thus they are less likely to have a high income (but this = true?)
 # the value of "?" in workclass is defined as having an estimate of 0 thus not shown in summary()
-
-levels(train_data$workclass)
-# [1] "?"                "Federal-gov"      "Local-gov"        "Never-worked"     "Private"          "Self-emp-inc"     "Self-emp-not-inc" "State-gov"        "Without-pay"     
+# for workclass = Federal-gov, exp(1.396911) = 4.042693 times that of being a "?" holding all else constant
+# for workclass = Never-worked, exp(-8.171719) = 0.0002825319 times that of being a "?" holding all else constant
 
 # only 2 people are high income without pay
 data_adult %>% 
@@ -312,7 +314,11 @@ data_adult %>%
 # raceOther                             0.024701   0.282863   0.087  0.93041    
 # raceWhite                             0.511269   0.189613   2.696  0.00701 ** 
 
+levels(train_data$race)
+# [1] "Amer-Indian-Eskimo" "Asian-Pac-Islander" "Black"              "Other"              "White"             
+
 # The effect of being a White person is approximately twice as big as being a black or asian person
+# for race = Pac-Islander, exp(0.287807) = 1.3335 times that of being a "Amer-Indian-Eskimo" holding all else constant
 
 #                                       Estimate Std. Error z value Pr(>|z|)    
 # educational.num                       0.384500   0.006844  56.180  < 2e-16 ***
@@ -337,7 +343,7 @@ preds <- test_data %>%
 
 head(preds)
 
-# age workclass educational.num     marital.status  race gender hours.per.week income probability predicted.class
+#     age workclass educational.num     marital.status  race gender hours.per.week income probability predicted.class
 # 1   25   Private               7      Never-married Black   Male             40  <=50K 0.007041886           <=50K
 # 2   38   Private               9 Married-civ-spouse White   Male             50  <=50K 0.352371016           <=50K
 # 9   24   Private              10      Never-married White Female             40  <=50K 0.024785834           <=50K
@@ -368,30 +374,36 @@ mod_summary$coefficients[1, 1] + 11.21118 # 0.6966773
 1 / (1 + exp(-0.696677)) # = 0.6674506 (that is correct)
 
 # evaluation metrics ####
-cm <- conf_mat(preds, truth = "income", estimate = "predicted.classes")
+cm <- conf_mat(preds, truth = "income", estimate = "predicted.class")
 cm
 
 #            Truth
 # Prediction <=50K >50K
-#      <=50K  6874 1122
-#      >50K    557 1216
+#      <=50K  6844 1125
+#      >50K    587 1213
 
 # print all metrics
 summary(cm)
 
 # .metric              .estimator .estimate
 # <chr>                <chr>          <dbl>
-# 1 accuracy             binary         0.828
-# 2 kap                  binary         0.485
-# 3 sens                 binary         0.925
-# 4 spec                 binary         0.520
-# 5 ppv                  binary         0.860
-# 6 npv                  binary         0.686
-# 7 mcc                  binary         0.493
-# 8 j_index              binary         0.445
-# 9 bal_accuracy         binary         0.723
-# 10 detection_prevalence binary         0.819
-# 11 precision            binary         0.860
-# 12 recall               binary         0.925
-# 13 f_meas               binary         0.891
+# 1 accuracy             binary         0.825
+# 2 kap                  binary         0.477
+# 3 sens                 binary         0.921
+# 4 spec                 binary         0.519
+# 5 ppv                  binary         0.859
+# 6 npv                  binary         0.674
+# 7 mcc                  binary         0.484
+# 8 j_index              binary         0.440
+# 9 bal_accuracy         binary         0.720
+# 10 detection_prevalence binary         0.816
+# 11 precision            binary         0.859
+# 12 recall               binary         0.921
+# 13 f_meas               binary         0.889
+
+# readings ####
+# https://www.guru99.com/r-generalized-linear-model.html
+# https://www.displayr.com/how-to-interpret-logistic-regression-coefficients/
+# https://towardsdatascience.com/an-introduction-to-logistic-regression-for-categorical-data-analysis-7cabc551546c
+
 
